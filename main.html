@@ -176,15 +176,21 @@
         };
         Character.prototype.processMovement = function (t) {
 
-            if (this.tileTo[0] == this.tileFrom[0] && this.tileTo[1] == this.tileFrom[1]) {
+            if (this.tileTo[0] == this.tileFrom[0] && this.tileTo[1] == this.tileFrom[1]) { // 안움직일 때.(목표랑 현재가 같을 때)
                 return false;
             }
+            // 아래부터는 움직일 때인데 이전 frame이랑 현재 frame간의 시간차와 moveSpeed를 이용해서 이동해야하는 정도를 계산해서 position을 갱신함.
             const moveSpeed = this.delayMove[tileTypes[gameMap[toIndex(this.tileFrom[0], this.tileFrom[1])]].floor];
+            // this.timeMoved: 이전에 움직인 시간
+            // t: 지금 시간
+            // t-this.timeMoved: 시간, moveSpeed: 속력이긴 한데 시간이라 볼 수 있음. 차라리 moveThreshold?같은 느낌
+            // - 이전 시간(t)으로부터 정해진 시간(moveSpeed)이 지나야지 placeAt(실제로 tileFrom, tileTo를 동기화)가 발동됨.
             if ((t - this.timeMoved) >= moveSpeed) {
                 this.placeAt(this.tileTo[0], this.tileTo[1]);
 
                 const tileFloor = tileTypes[gameMap[toIndex(this.tileFrom[0], this.tileFrom[1])]].floor;
 
+                // 그렇게 도착한 tile type에 따라서 각기 다른 동작들이 수행됨.
                 if (tileFloor === floorTypes.ice) {
                     if (this.canMoveDirection(this.direction)) {
                         this.moveDirection(this.direction, t);
@@ -198,17 +204,19 @@
                 } else if (tileFloor === floorTypes.conveyorD && this.canMoveDown()) {
                     this.moveDown(t);
                 }
-            } else {
+            } else { // 움직이는 중
                 // pixel position
+
+                // 중간 지점을 찾아준다. 이동할 stride?
                 this.position[0] = (this.tileFrom[0] * tileW) + ((tileW - this.dimensions[0]) / 2);
                 this.position[1] = (this.tileFrom[1] * tileH) + ((tileH - this.dimensions[1]) / 2);
 
                 if (this.tileTo[0] != this.tileFrom[0]) { // Horizontally
-                    const diff = (tileW / moveSpeed) * (t - this.timeMoved);
+                    const diff = ((t - this.timeMoved) / moveSpeed) * tileW;
                     this.position[0] += (this.tileTo[0] < this.tileFrom[0]) ? 0 - diff : diff;
                 }
                 if (this.tileTo[1] != this.tileFrom[1]) { // Vertically
-                    const diff = (tileH / moveSpeed) * (t - this.timeMoved);
+                    const diff = ((t - this.timeMoved) / moveSpeed) * tileH;
                     this.position[1] += (this.tileTo[1] < this.tileFrom[1]) ? 0 - diff : diff;
                 }
                 this.position[0] = Math.round(this.position[0]);
