@@ -38,21 +38,21 @@
       const objectTypes = {
         1: {
           name: "Box",
-          sprite: [{ x: 40, y: 160, w: 40, h: 40 }],
+          sprite: new Sprite([{ x: 40, y: 160, w: 40, h: 40 }]),
           offset: [0, 0],
           collision: objectCollision.solid,
           zIndex: 1,
         },
         2: {
           name: "Broken Box",
-          sprite: [{ x: 40, y: 200, w: 40, h: 40 }],
+          sprite: new Sprite([{ x: 40, y: 200, w: 40, h: 40 }]),
           offset: [0, 0],
           collision: objectCollision.none,
           zIndex: 1,
         },
         3: {
           name: "Tree top",
-          sprite: [{ x: 80, y: 160, w: 80, h: 80 }],
+          sprite: new Sprite([{ x: 80, y: 160, w: 80, h: 80 }]),
           offset: [-20, -20], //TODO: 수정하면서 보기
           collision: objectCollision.solid,
           zIndex: 3,
@@ -62,10 +62,52 @@
         1: {
           name: "Star",
           maxStack: 2,
-          sprite: [{x:240, y:0, w:40, h:40}],
+          sprite: new Sprite([{x:240, y:0, w:40, h:40}]),
           offset: [0,0],
         }
       }
+      function Sprite(data){
+        this.animated = data.length > 1;
+        this.frameCount = data.length;
+        this.duration = 0;
+        this.loop = true;
+        if(data.length > 1){
+          for(let i in data){
+            if(typeof data[i].d == 'undefined'){
+              data[i].d = 100;
+            }
+            this.duration += data[i].d;
+
+            if(typeof data[i].loop != 'undefined'){
+              this.loop = data[i].loop ? true : false;
+            }
+          }
+        }
+        this.frames = data;
+      }
+      Sprite.prototype.draw = function(t, x, y){
+        let frameIdx = 0;
+        if (!this.loop && this.animated && t >= this.duration) {
+          frameIdx = (this.frames.length - 1);
+        } else if (this.animated) {
+          t = t % this.duration;
+          let totalD = 0;
+          for (let ii in this.frames) {
+            totalD += this.frames[ii].d;
+            frameIdx = ii;
+            if (t <= totalD) {
+              break;
+            }
+          }
+        }
+        let offset = (typeof this.frames[frameIdx].offset == 'undefined' ?
+                [0, 0] : this.frames[frameIdx].offset);
+        ctx.drawImage(tileset,
+                this.frames[frameIdx].x, this.frames[frameIdx].y, this.frames[frameIdx].w, this.frames[frameIdx].h,
+                x + offset[0], y + offset[1],
+                this.frames[frameIdx].w, this.frames[frameIdx].h);
+      }
+
       function Stack(id, qty){
         this.type = id;
         this.qty = qty;
@@ -191,81 +233,82 @@
         0: {
           color: "#685b48",
           floor: floorTypes.solid,
-          sprite: [{ x: 0, y: 0, w: 40, h: 40 }],
+          sprite: new Sprite([{x: 0, y: 0, w: 40, h: 40}]),
         },
         1: {
           color: "#5aa457",
           floor: floorTypes.grass,
-          sprite: [{ x: 40, y: 0, w: 40, h: 40 }],
+          sprite: new Sprite([{x: 40, y: 0, w: 40, h: 40}]),
         },
         2: {
           color: "#e8bd7a",
           floor: floorTypes.path,
-          sprite: [{ x: 80, y: 0, w: 40, h: 40 }],
+          sprite: new Sprite([{x: 80, y: 0, w: 40, h: 40}]),
         },
         3: {
           color: "#286625",
           floor: floorTypes.solid,
-          sprite: [{ x: 120, y: 0, w: 40, h: 40 }],
+          sprite: new Sprite([{x: 120, y: 0, w: 40, h: 40}]),
         },
         4: {
           color: "#eeeeff",
           floor: floorTypes.water,
-          sprite:[
-            {x:160,y:0,w:40,h:40,d:200}, {x:200,y:0,w:40,h:40,d:200},
-            {x:160,y:40,w:40,h:40,d:200}, {x:200,y:40,w:40,h:40,d:200},
-            {x:160,y:40,w:40,h:40,d:200}, {x:200,y:0,w:40,h:40,d:200}
-          ]},
-        5 : { colour:"#eeeeff", floor:floorTypes.ice,	sprite:[{x:120,y:120,w:40,h:40}]},
+          sprite: new Sprite([
+            {x: 160, y: 0, w: 40, h: 40, d: 200}, {x: 200, y: 0, w: 40, h: 40, d: 200},
+            {x: 160, y: 40, w: 40, h: 40, d: 200}, {x: 200, y: 40, w: 40, h: 40, d: 200},
+            {x: 160, y: 40, w: 40, h: 40, d: 200}, {x: 200, y: 0, w: 40, h: 40, d: 200}
+          ])
+        },
+        5: {color: "#eeeeff", floor: floorTypes.ice, sprite: new Sprite([{x: 120, y: 120, w: 40, h: 40}])},
         6: {
           color: "#000000",
           floor: floorTypes.conveyorL,
-          sprite: [
-            { x: 0, y: 40, w: 40, h: 40, d: 200 },
-            { x: 40, y: 40, w: 40, h: 40, d: 200 },
-            { x: 80, y: 40, w: 40, h: 40, d: 200 },
-            { x: 120, y: 40, w: 40, h: 40, d: 200 },
-          ],
+          sprite: new Sprite([
+            {x: 0, y: 40, w: 40, h: 40, d: 200},
+            {x: 40, y: 40, w: 40, h: 40, d: 200},
+            {x: 80, y: 40, w: 40, h: 40, d: 200},
+            {x: 120, y: 40, w: 40, h: 40, d: 200},
+          ]),
         },
         7: {
           color: "#000000",
           floor: floorTypes.conveyorR,
-          sprite: [
-            { x: 120, y: 80, w: 40, h: 40, d: 200 },
-            { x: 80, y: 80, w: 40, h: 40, d: 200 },
-            { x: 40, y: 80, w: 40, h: 40, d: 200 },
-            { x: 0, y: 80, w: 40, h: 40, d: 200 },
-          ],
+          sprite: new Sprite([
+            {x: 120, y: 80, w: 40, h: 40, d: 200},
+            {x: 80, y: 80, w: 40, h: 40, d: 200},
+            {x: 40, y: 80, w: 40, h: 40, d: 200},
+            {x: 0, y: 80, w: 40, h: 40, d: 200},
+          ]),
         },
         8: {
           color: "#000000",
           floor: floorTypes.conveyorD,
-          sprite: [
-            { x: 160, y: 200, w: 40, h: 40, d: 200 },
-            { x: 160, y: 160, w: 40, h: 40, d: 200 },
-            { x: 160, y: 120, w: 40, h: 40, d: 200 },
-            { x: 160, y: 80, w: 40, h: 40, d: 200 },
-          ],
+          sprite: new Sprite([
+            {x: 160, y: 200, w: 40, h: 40, d: 200},
+            {x: 160, y: 160, w: 40, h: 40, d: 200},
+            {x: 160, y: 120, w: 40, h: 40, d: 200},
+            {x: 160, y: 80, w: 40, h: 40, d: 200},
+          ]),
         },
         9: {
           color: "#000000",
           floor: floorTypes.conveyorU,
-          sprite: [
-            { x: 200, y: 80, w: 40, h: 40, d: 200 },
-            { x: 200, y: 120, w: 40, h: 40, d: 200 },
-            { x: 200, y: 160, w: 40, h: 40, d: 200 },
-            { x: 200, y: 200, w: 40, h: 40, d: 200 },
-          ],
+          sprite: new Sprite([
+            {x: 200, y: 80, w: 40, h: 40, d: 200},
+            {x: 200, y: 120, w: 40, h: 40, d: 200},
+            {x: 200, y: 160, w: 40, h: 40, d: 200},
+            {x: 200, y: 200, w: 40, h: 40, d: 200},
+          ]),
         },
         10: {
           color: "#ccaa00",
           floor: floorTypes.solid,
-          sprite: [{ x: 40, y: 120, w: 40, h: 40 }],
+          sprite: new Sprite([{x: 40, y: 120, w: 40, h: 40}]),
         },
         11: {
           color: "#ccaa00",
           floor: floorTypes.solid,
-          sprite: [{ x: 80, y: 120, w: 40, h: 40 }],
+          sprite: new Sprite([{x: 80, y: 120, w: 40, h: 40}]),
         },
       };
       function Tile(tx, ty, tt) {
@@ -382,10 +425,10 @@
 
         this.direction = directions.up;
         this.sprites = {};
-        this.sprites[directions.up] = [{ x: 0, y: 120, w: 30, h: 30 }];
-        this.sprites[directions.right] = [{ x: 0, y: 150, w: 30, h: 30 }];
-        this.sprites[directions.down] = [{ x: 0, y: 180, w: 30, h: 30 }];
-        this.sprites[directions.left] = [{ x: 0, y: 210, w: 30, h: 30 }];
+        this.sprites[directions.up] = new Sprite([{ x: 0, y: 120, w: 30, h: 30 }]);
+        this.sprites[directions.right] = new Sprite([{ x: 0, y: 150, w: 30, h: 30 }]);
+        this.sprites[directions.down] = new Sprite([{ x: 0, y: 180, w: 30, h: 30 }]);
+        this.sprites[directions.left] = new Sprite([{ x: 0, y: 210, w: 30, h: 30 }]);
 
         this.inventory = new Inventory(3);
       }
@@ -620,18 +663,6 @@
         };
         tileset.src = tilesetURL;
 
-        for (x in tileTypes) {
-          tileTypes[x]["animated"] = tileTypes[x].sprite.length > 1;
-          if (tileTypes[x].animated) {
-            let t = 0;
-            for (s in tileTypes[x].sprite) {
-              tileTypes[x].sprite[s]["start"] = t;
-              t += tileTypes[x].sprite[s].d;
-              tileTypes[x].sprite[s]["end"] = t;
-            }
-            tileTypes[x]["spriteDuration"] = t;
-          }
-        }
         mapTileData.buildMapFromData(gameMap, mapW, mapH);
         mapTileData.addRoofs(roofList);
 
@@ -673,20 +704,6 @@
           ps.placeAt(3, i);
         }
       };
-
-      function getFrame(sprite, duration, time, animated) {
-        if (!animated) {
-          return sprite[0];
-        }
-
-        time = time % duration;
-
-        for (x in sprite) {
-          if (sprite[x].end >= time) {
-            return sprite[x];
-          }
-        }
-      }
 
       function drawGame() {
         if (ctx == null) return;
@@ -741,52 +758,28 @@
           for (let y = viewport.startTile[1]; y <= viewport.endTile[1]; y++) {
             for (let x = viewport.startTile[0]; x <= viewport.endTile[0]; x++) {
               if (z == 0) {
-                let tile = tileTypes[mapTileData.map[toIndex(x, y)].type];
-                let sprite = getFrame(
-                  tile.sprite,
-                  tile.spriteDuration,
-                  gameTime,
-                  tile.animated
-                );
-                ctx.drawImage(
-                  tileset,
-                  sprite.x,
-                  sprite.y,
-                  sprite.w,
-                  sprite.h,
-                  viewport.offset[0] + x * tileW,
-                  viewport.offset[1] + y * tileH,
-                  tileW,
-                  tileH
-                );
+                tileTypes[mapTileData.map[toIndex(x, y)].type].sprite.draw(
+                        gameTime,
+                        viewport.offset[0] + (x * tileW),
+                        viewport.offset[1] + (y * tileH),
+                )
               }else if (z == 1){
                 let is = mapTileData.map[toIndex(x, y)].itemStack;
                 if (is != null) {
-                  let sprite = itemTypes[is.type].sprite;
-                  ctx.drawImage(tileset,
-                          sprite[0].x, sprite[0].y,
-                          sprite[0].w, sprite[0].h,
+                  itemTypes[is.type].sprite.draw(
+                          gameTime,
                           viewport.offset[0] + x * tileW + itemTypes[is.type].offset[0],
                           viewport.offset[1] + y * tileH + itemTypes[is.type].offset[1],
-                          sprite[0].w, sprite[0].h
-                  );
+                  )
                 }
               }
               const o = mapTileData.map[toIndex(x, y)].object;
               if (o != null && objectTypes[o.type].zIndex == z) {
                 const ot = objectTypes[o.type];
-
-                ctx.drawImage(
-                  tileset,
-                  ot.sprite[0].x,
-                  ot.sprite[0].y,
-                  ot.sprite[0].w,
-                  ot.sprite[0].h,
-                  viewport.offset[0] + x * tileW + ot.offset[0],
-                  viewport.offset[1] + y * tileH + ot.offset[1],
-                  ot.sprite[0].w,
-                  ot.sprite[0].h
-                );
+                ot.sprite.draw(gameTime,
+                        viewport.offset[0] + x * tileW + ot.offset[0],
+                        viewport.offset[1] + y * tileH + ot.offset[1],
+                )
               }
               if (
                 z == 2 &&
@@ -794,40 +787,18 @@
                 mapTileData.map[toIndex(x, y)].roof != playerRoof1 &&
                 mapTileData.map[toIndex(x, y)].roof != playerRoof2
               ) {
-                tile = tileTypes[mapTileData.map[toIndex(x, y)].roofType];
-                sprite = getFrame(
-                  tile.sprite,
-                  tile.spriteDuration,
-                  gameTime,
-                  tile.animated
-                );
-                ctx.drawImage(
-                  tileset,
-                  sprite.x,
-                  sprite.y,
-                  sprite.w,
-                  sprite.h,
-                  viewport.offset[0] + x * tileW,
-                  viewport.offset[1] + y * tileH,
-                  tileW,
-                  tileH
+                tileTypes[mapTileData.map[toIndex(x, y)].roofType].sprite.draw(
+                        gameTime,
+                        viewport.offset[0] + x * tileW,
+                        viewport.offset[1] + y * tileH,
                 );
               }
             }
           }
           if (z == 1) {
-            const sprite = player.sprites[player.direction];
-            ctx.drawImage(
-              tileset,
-              sprite[0].x,
-              sprite[0].y,
-              sprite[0].w,
-              sprite[0].h,
-              viewport.offset[0] + player.position[0],
-              viewport.offset[1] + player.position[1],
-              player.dimensions[0],
-              player.dimensions[1]
-            );
+            player.sprites[player.direction].draw(gameTime,
+                    viewport.offset[0] + player.position[0],
+                    viewport.offset[1] + player.position[1],);
           }
         } // end of Z-Index Loop
 
@@ -838,18 +809,11 @@
           ctx.fillRect(10 + (i * 50), 350, 40, 40);
           if(typeof player.inventory.stacks[i] != 'undefined'){
             let it = itemTypes[player.inventory.stacks[i].type];
-            let sprite = it.sprite;
-            ctx.drawImage(
-                    tileset,
-                    sprite[0].x,
-                    sprite[0].y,
-                    sprite[0].w,
-                    sprite[0].h,
+            it.sprite.draw(
+                    gameTime,
                     10 + i * 50 + it.offset[0],
                     350 + it.offset[1],
-                    sprite[0].w,
-                    sprite[0].h
-            )
+            );
             if(player.inventory.stacks[i].qty > 1){
               ctx.fillStyle = "#000000";ctx.fillText("" + player.inventory.stacks[i].qty,
               10+ (i*50) + 38, 350+38);
