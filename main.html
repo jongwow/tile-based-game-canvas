@@ -53,11 +53,61 @@
         3: {
           name: "Tree top",
           sprite: [{ x: 80, y: 160, w: 80, h: 80 }],
-          offset: [-20, -20],
+          offset: [-20, -20], //TODO: 수정하면서 보기
           collision: objectCollision.solid,
           zIndex: 3,
         },
       };
+      const itemTypes = {
+        1: {
+          name: "Star",
+          maxStack: 2,
+          sprite: [{x:240, y:0, w:40, h:40}],
+          offset: [0,0],
+        }
+      }
+      function Stack(id, qty){
+        this.type = id;
+        this.qty = qty;
+      }
+      function Inventory(s){
+        this.spaces = s;
+        this.stacks = [];
+      }
+      Inventory.prototype.addItems = function(id, qty){
+        for(let i=0; i<this.spaces; i++){
+          if(this.stacks.length <= i){
+            let maxHere = (qty > itemTypes[id].maxStack ?
+                            itemTypes[id].maxStack : qty);
+            this.stacks.push(new Stack(id, maxHere));
+            qty -= maxHere;
+          } else if (this.stacks[i].type == id &&
+                    this.stacks[i].qty < itemTypes[id].maxStack){
+            let maxHere = (itemTypes[id].maxStack - this.stacks[i].qty);
+            if(maxHere > qty) { maxHere = qty; }
+
+            this.stacks[i].qty += maxHere;
+            qty -= maxHere;
+          }
+          if(qty == 0){ return 0; }
+        }
+        return qty;
+      }
+      function PlacedItemStack(id, qty){
+        this.type = id;
+        this.qty = qty;
+        this.x = 0;
+        this.y = 0;
+      }
+      PlacedItemStack.prototype.placeAt = function(nx, ny){
+        if(mapTileData.map[toIndex(this.x, this.y)].itemStack == this){
+          mapTileData.map[toIndex(this.x, this.y)].itemStack = null;
+        }
+        this.x = nx;
+        this.y = ny;
+
+        mapTileData.map[toIndex(nx, ny)].itemStack = this;
+      }
       function MapObject(nt) {
         this.x = 0;
         this.y = 0;
@@ -226,6 +276,7 @@
         this.roofType = 0;
         this.eventEnter = null;
         this.object = null;
+        this.itemStack = null;
       }
       function TileMap() {
         this.map = [];
@@ -335,6 +386,8 @@
         this.sprites[directions.right] = [{ x: 0, y: 150, w: 30, h: 30 }];
         this.sprites[directions.down] = [{ x: 0, y: 180, w: 30, h: 30 }];
         this.sprites[directions.left] = [{ x: 0, y: 210, w: 30, h: 30 }];
+
+        this.inventory = new Inventory(3);
       }
 
       Character.prototype.placeAt = function (x, y) {
@@ -508,6 +561,21 @@
             return false;
         }
       };
+      Character.prototype.pickUp = function () {
+        if(this.tileTo[0] != this.tileFrom[0] ||
+          this.tileTo[1] != this.tileTo[1]){
+          return false;
+        }
+        const is = mapTileData.map[toIndex(this.tileFrom[0], this.tileFrom[1])].itemStack;
+        if(is!=null){
+          const remains = this.inventory.addItems(is.type, is.qty)
+          if(remains) is.qty = remains;
+          else{
+            mapTileData.map[toIndex(this.tileFrom[0], this.tileFrom[1])].itemStack = null;
+          }
+        }
+        return true;
+      }
 
       function toIndex(x, y) {
         return y * mapW + x;
@@ -522,6 +590,7 @@
           if (e.keyCode >= 37 && e.keyCode <= 40) {
             keysDown[e.keyCode] = true;
           }
+          if (e.keyCode == 80){ keysDown[e.keyCode] = true;}
           if (e.keyCode === 83) {
             currentGameSpeed =
               currentGameSpeed >= gameSpeeds.length - 1
@@ -533,6 +602,7 @@
           if (e.keyCode >= 37 && e.keyCode <= 40) {
             keysDown[e.keyCode] = false;
           }
+          if (e.keyCode == 80){ keysDown[e.keyCode] = false;}
         });
 
         viewport.screen = [
@@ -592,6 +662,16 @@
         mo8.placeAt(2, 9);
         const mo9 = new MapObject(3);
         mo9.placeAt(2, 12);
+
+        for(let i=3; i<8; i++){
+          let ps = new PlacedItemStack(1, 1);
+          ps.placeAt(i, 1);
+        }
+
+        for(let i=3; i<8; i++){
+          let ps = new PlacedItemStack(1, 1);
+          ps.placeAt(3, i);
+        }
       };
 
       function getFrame(sprite, duration, time, animated) {
@@ -637,6 +717,8 @@
             player.moveLeft(gameTime);
           } else if (keysDown[39] && player.canMoveRight()) {
             player.moveRight(gameTime);
+          } else if (keysDown[80]) {
+            player.pickUp()
           }
         }
 
@@ -677,6 +759,18 @@
                   tileW,
                   tileH
                 );
+              }else if (z == 1){
+                let is = mapTileData.map[toIndex(x, y)].itemStack;
+                if (is != null) {
+                  let sprite = itemTypes[is.type].sprite;
+                  ctx.drawImage(tileset,
+                          sprite[0].x, sprite[0].y,
+                          sprite[0].w, sprite[0].h,
+                          viewport.offset[0] + x * tileW + itemTypes[is.type].offset[0],
+                          viewport.offset[1] + y * tileH + itemTypes[is.type].offset[1],
+                          sprite[0].w, sprite[0].h
+                  );
+                }
               }
               const o = mapTileData.map[toIndex(x, y)].object;
               if (o != null && objectTypes[o.type].zIndex == z) {
@@ -738,6 +832,30 @@
         } // end of Z-Index Loop
 
         // ctx.fillRect(viewport.offset[0]+player.position[0], viewport.offset[1]+player.position[1], player.dimensions[0], player.dimensions[1]);
+        ctx.textAlign = "right";
+        for(let i=0; i<player.inventory.spaces; i++){
+          ctx.fillStyle = "#ddccaa";
+          ctx.fillRect(10 + (i * 50), 350, 40, 40);
+          if(typeof player.inventory.stacks[i] != 'undefined'){
+            let it = itemTypes[player.inventory.stacks[i].type];
+            let sprite = it.sprite;
+            ctx.drawImage(
+                    tileset,
+                    sprite[0].x,
+                    sprite[0].y,
+                    sprite[0].w,
+                    sprite[0].h,
+                    10 + i * 50 + it.offset[0],
+                    350 + it.offset[1],
+                    sprite[0].w,
+                    sprite[0].h
+            )
+            if(player.inventory.stacks[i].qty > 1){
+              ctx.fillStyle = "#000000";ctx.fillText("" + player.inventory.stacks[i].qty,
+              10+ (i*50) + 38, 350+38);
+            }
+          }
+        }
 
         ctx.fillStyle = "#ff0000";
         ctx.fillText("FPS: " + framesLastSecond, 10, 20);
